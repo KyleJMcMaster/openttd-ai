@@ -1,9 +1,7 @@
 
  class TestAI extends AIController
  {
-   constructor()
-   {
-   } 
+  function Start();
  }
  
  
@@ -11,6 +9,9 @@
  {
    AILog.Info("TestAI Started.");
    SetCompanyName();
+
+   local sum = testadd(10,5);
+   AILog.Info("Printed: " + sum);
   
    //set a legal railtype. 
    local types = AIRailTypeList();
