@@ -10,4 +10,4 @@ cp -rv "$SOURCE_DIR"* "$DEST_DIR"
 echo "---------------------------------------"
 echo "AI files synced to: $DEST_DIR"
 
-src-engine/build/openttd
+src-engine/build/openttd -d script=5
