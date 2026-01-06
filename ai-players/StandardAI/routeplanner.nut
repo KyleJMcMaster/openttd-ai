@@ -28,7 +28,7 @@ function CompareRouteCandidates(a, b) {
 }
 function FastGetRouteProfit(routeCandidate, eID) {
 	if (!AIEngine.CanRefitCargo(eID, routeCandidate.cargoID)){
-		return 0;
+		return -1;
 	}
 
 	local num_trips = routeCandidate.surplus / AIEngine.GetCapacity(eID);
@@ -41,9 +41,13 @@ function FastGetRouteProfit(routeCandidate, eID) {
 	return AICargo.GetCargoIncome(routeCandidate.cargoID, routeCandidate.distance, days_in_transit) * routeCandidate.surplus - operational_cost;
 }
 
-function GetCandidateVehicles(vehicle_type){
+function GetCandidateVehicles(vehicle_type, cargoID){
 	// gets all vehicles which could return the best profit. Groups by speed, then finds vehicle which minimizes (1/c)*(2p/a + r/180)
 	local engine_list = AIEngineList(vehicle_type);
+	foreach (eID, _ in engine_list) {
+		engine_list.SetValue(eID, AIEngine.CanRefitCargo(eID, cargoID));
+	}
+	engine_list.KeepValue(1);
 	engine_list.Valuate(AIEngine.GetMaxSpeed);
 	local candidate_list = AIList();
 	local candidate_speeds = AIList();
@@ -71,11 +75,13 @@ function GetCandidateVehicles(vehicle_type){
  function RoutePlanner::GetCandidateRoutes() {
  	local candidates = [];
     local industries = AIIndustryList();
+	local cargos = [];
 
     foreach (pID, _ in industries) {
         local producedCargoes = AICargoList_IndustryProducing(pID);
 
         foreach (cID, _ in producedCargoes) {
+
             local surplus = AIIndustry.GetLastMonthProduction(pID, cID) -
                             AIIndustry.GetLastMonthTransported(pID, cID);
 
@@ -96,23 +102,25 @@ function GetCandidateVehicles(vehicle_type){
     // candidates.sort(CompareRouteCandidates);
 
 
-	local candidate_engines = GetCandidateVehicles(AIVehicle.VT_ROAD);
-	foreach (eID in candidate_engines) {
-		AILog.Info(eID);
+	//local candidate_engines = GetCandidateVehicles(AIVehicle.VT_ROAD);
+	local candidate_engines = AIEngineList(AIVehicle.VT_ROAD);
+	foreach (eID, _ in candidate_engines) {
+		AILog.Info(AIEngine.GetName(eID));
 	}
 	local i = 0;
 	foreach (candidate in candidates) {
 		local max_profit = -1;
 		local max_engine = -1;
-		foreach (eID in candidate_engines) {
+		foreach (eID, _ in candidate_engines) {
 			local profit = FastGetRouteProfit(candidate, eID);
+			//AILog.Info(profit);
 			if (profit > max_profit){
 				max_profit = profit;
 				max_engine = eID;
 			}
 		}
 		AILog.Info("Route " + i + " from " + candidate.produceID + " to " + candidate.acceptID + " transporting " + candidate.surplus + " units of " + AICargo.GetName(candidate.cargoID) + " a distance of " + candidate.distance +
-	" with expected profit of " + max_profit + " using vehicle " + max_engine);
+	" with expected profit of " + max_profit + " using vehicle " + AIEngine.GetName(max_engine));
 		i++;
 	}
 

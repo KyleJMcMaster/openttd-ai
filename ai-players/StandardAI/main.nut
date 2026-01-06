@@ -11,10 +11,10 @@ require("routeplanner.nut");
  {
    AILog.Info("StandardAI Started.");
    SetCompanyName();
+   RoutePlanner.GetCandidateRoutes();
 
    //Keep running. If Start() exits, the AI dies.
    while (true) {
-    RoutePlanner.GetCandidateRoutes();
     this.Sleep(1000);
 
    }
