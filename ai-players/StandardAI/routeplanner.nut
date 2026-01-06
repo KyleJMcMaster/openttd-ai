@@ -10,6 +10,9 @@
     cargoID = null;      // Cargo Type
     surplus = -1;         // Remaining production
     distance = -1;        // Distance between them
+	expected_profit = -1;
+	engineID = null;
+	cost = -1;
 
 
     constructor(p, a, c, s, d) {
@@ -22,23 +25,26 @@
 }
 
 function CompareRouteCandidates(a, b) {
-    if (a.surplus > b.surplus) return -1;
-    if (a.surplus < b.surplus) return 1;
+    if (a.expected_profit > b.expected_profit) return -1;
+    if (a.expected_profit < b.expected_profit) return 1;
     return 0;
 }
 function FastGetRouteProfit(routeCandidate, eID) {
 	if (!AIEngine.CanRefitCargo(eID, routeCandidate.cargoID)){
-		return -1;
+		return [-999999999,99999999];
 	}
 
 	local num_trips = routeCandidate.surplus / AIEngine.GetCapacity(eID);
 	local days_in_transit = routeCandidate.distance / AIEngine.GetMaxSpeed(eID);
 	local num_vehicles = 0.0667 * days_in_transit * num_trips;
 	local monthly_cost_per_vehicle = AIEngine.GetPrice(eID) / (AIEngine.GetMaxAge(eID) / 30) + AIEngine.GetRunningCost(eID) / 12; // capex / (lifespan in days / 30 days per month) + running cost per year / 12 months per year
-	local build_cost = AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD) * routeCandidate.distance / 60 // 5 year time horizon
-	local operational_cost = num_vehicles * monthly_cost_per_vehicle + build_cost;
+	local build_cost = AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD) * routeCandidate.distance
+	local operational_cost = num_vehicles * monthly_cost_per_vehicle + build_cost / 60; // 5 year time horizon for builds
 
-	return AICargo.GetCargoIncome(routeCandidate.cargoID, routeCandidate.distance, days_in_transit) * routeCandidate.surplus - operational_cost;
+	local upfront_cost = build_cost + num_vehicles * AIEngine.GetPrice(eID);
+	local operational_profit = AICargo.GetCargoIncome(routeCandidate.cargoID, routeCandidate.distance, days_in_transit) * routeCandidate.surplus - operational_cost;
+
+	return [operational_profit, upfront_cost];
 }
 
 function GetCandidateVehicles(vehicle_type, cargoID){
@@ -111,17 +117,31 @@ function GetCandidateVehicles(vehicle_type, cargoID){
 	foreach (candidate in candidates) {
 		local max_profit = -1;
 		local max_engine = -1;
+		local max_cost = -1;
 		foreach (eID, _ in candidate_engines) {
-			local profit = FastGetRouteProfit(candidate, eID);
+			local result = FastGetRouteProfit(candidate, eID);
 			//AILog.Info(profit);
-			if (profit > max_profit){
-				max_profit = profit;
+			if (result[0] > max_profit){
+				max_profit = result[0];
 				max_engine = eID;
+				max_cost = result[1];
 			}
 		}
+		candidate.expected_profit = max_profit;
+		candidate.engineID = max_engine;
+		candidate.cost = max_cost;
+
 		AILog.Info("Route " + i + " from " + candidate.produceID + " to " + candidate.acceptID + " transporting " + candidate.surplus + " units of " + AICargo.GetName(candidate.cargoID) + " a distance of " + candidate.distance +
-	" with expected profit of " + max_profit + " using vehicle " + AIEngine.GetName(max_engine));
+	" with expected profit of " + max_profit + " using vehicle " + AIEngine.GetName(max_engine) + " with cost " + max_cost);
 		i++;
+	}
+
+	candidates.sort(CompareRouteCandidates);
+	AILog.Info("\n-------BEST ROUTES-------\n")
+	for (local i = 0; i < 5; i++){
+		local candidate = candidates[i];
+		AILog.Info(AIIndustry.GetName(candidate.produceID) + " to " + AIIndustry.GetName(candidate.acceptID) + " transporting " + AICargo.GetName(candidate.cargoID) + " a distance of " + candidate.distance +
+	" with expected profit of " + candidate.expected_profit + " using vehicle " + AIEngine.GetName(candidate.engineID) + " with cost " + candidate.cost);
 	}
 
 
