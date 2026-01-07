@@ -136,6 +136,13 @@ function GetCandidateVehicles(vehicle_type, cargoID){
 		i++;
 	}
 
+	local filteredCandidates = [];
+	foreach (item in candidates) {
+		if (item.cost < 100000) {
+			filteredCandidates.push(item);
+		}
+	}
+	candidates = filteredCandidates;
 	candidates.sort(CompareRouteCandidates);
 	AILog.Info("\n-------BEST ROUTES-------\n")
 	for (local i = 0; i < 5; i++){
@@ -143,10 +150,6 @@ function GetCandidateVehicles(vehicle_type, cargoID){
 		AILog.Info(AIIndustry.GetName(candidate.produceID) + " to " + AIIndustry.GetName(candidate.acceptID) + " transporting " + AICargo.GetName(candidate.cargoID) + " a distance of " + candidate.distance +
 	" with expected profit of " + candidate.expected_profit + " using vehicle " + AIEngine.GetName(candidate.engineID) + " with cost " + candidate.cost);
 	}
-
-
-
-
 
     return candidates;
 }
