@@ -1,4 +1,3 @@
-
  class RoutePlanner
  {
 
@@ -138,7 +137,7 @@ function GetCandidateVehicles(vehicle_type, cargoID){
 
 	local filteredCandidates = [];
 	foreach (item in candidates) {
-		if (item.cost < 100000) {
+		if (item.distance < 70) {
 			filteredCandidates.push(item);
 		}
 	}
