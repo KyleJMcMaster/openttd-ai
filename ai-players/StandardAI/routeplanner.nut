@@ -35,7 +35,7 @@ function FastGetRouteProfit(routeCandidate, eID) {
 	}
 
 	local num_trips = routeCandidate.surplus / AIEngine.GetCapacity(eID);
-	local days_in_transit = routeCandidate.distance / AIEngine.GetMaxSpeed(eID);
+	local days_in_transit = (routeCandidate.distance / AIEngine.GetMaxSpeed(eID) * 26.84).tointeger(); // 24 h/d * s km/h * 1/644.216 t/km ~= 1/26.84 t/d adjustment factor
 	local num_vehicles = 0.0667 * days_in_transit * num_trips;
 	local monthly_cost_per_vehicle = AIEngine.GetPrice(eID) / (AIEngine.GetMaxAge(eID) / 30) + AIEngine.GetRunningCost(eID) / 12; // capex / (lifespan in days / 30 days per month) + running cost per year / 12 months per year
 	local build_cost = AIRoad.GetBuildCost(AIRoad.ROADTYPE_ROAD, AIRoad.BT_ROAD) * routeCandidate.distance
